@@ -31,7 +31,7 @@ To run the shell, from the root directory of project run 'make' followed by './a
 - **Pastevents**
     - The 'pastevents' function is similar to the 'history' command in Linux
     - 'pastevents.c' is its code source
-    - Stores/displays maximum 15 commands
+    - Stores/displays maximum 12 commands
     - 'pastevents purge' clears out the stored history
     - 'pastevents execute <index>' executes the command at the specified index
     - Repeated commands are not stored
