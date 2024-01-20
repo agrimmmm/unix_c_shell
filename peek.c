@@ -1,5 +1,57 @@
 #include "headers.h"
 
+void ls(char* str, char* UserName)
+{
+    if(str[0] == 'p' && str[1] == 'e' && str[2] == 'e' && str[3] == 'k')
+    {
+        char Directory[1024];
+        getcwd(Directory, sizeof(Directory));
+        if(str[4] == '\0' || (str[4] == ' ' && str[5] == '\0'))
+        {
+            peek(Directory, 0, 0);
+            return;
+        }
+        char* token;
+        token = strtok(str, " ");
+        int op_a = 0, op_l = 0;
+        while(token)
+        {
+            token = strtok(NULL, " ");
+            if(!token)
+            {
+                peek(Directory, op_a, op_l);
+                return;
+            }
+            else if(strcmp(token, "-a") == 0)
+                op_a = 1;
+            else if(strcmp(token, "-l") == 0)
+                op_l = 1;
+            else if(strcmp(token, "-al") == 0 || strcmp(token, "-la") == 0)
+            {
+                op_a = 1;
+                op_l = 1;
+            }
+            else
+            {
+                if(strcmp(token, "~") == 0)
+                {
+                    char home[256];
+                    sprintf(home, "/home/%s", UserName);
+                    peek(home, op_a, op_l);
+                    return;
+                }
+                else
+                {
+                    peek(token, op_a, op_l);
+                    return;
+                }
+            }
+        }
+    }
+    else    
+        return;
+}
+
 int cmpfunc (const void * a, const void * b)
 {
     store as = *(store*)a;
@@ -212,9 +264,9 @@ void peek(char* dir, int op_a, int op_l)
             if(list[i].color == 0)
                 printf("%s  ", list[i].name);
             else if(list[i].color == 1)
-                printf("\033[1;34m%s  \033[0m", list[i].name);
+                printf("\033[1;34m%s\033[0m\t", list[i].name);
             else
-                printf("\033[1;32m%s  \033[0m", list[i].name);
+                printf("\033[1;32m%s\033[0m\t", list[i].name);
         }
         printf("\n");
     }

@@ -20,6 +20,7 @@ void past_execute(int index, FILE* fptr, int* count)
 {
     char line[128];
     int val = *count - index;
+    // printf("%d---%d\n", *count, val);
     while(fgets(line, sizeof(line), fptr) != NULL)
     {
         if(val--)
@@ -47,9 +48,9 @@ void past_execute(int index, FILE* fptr, int* count)
     pid_t sys = fork();
     if(sys == 0)
     {
-    int e_check = execvp(final_args[0], final_args);
-    if(e_check == -1)
-        printf("ERROR : %s is not a valid command\n", args[0]);
+        int e_check = execvp(final_args[0], final_args);
+        if(e_check == -1)
+            printf("ERROR : %s is not a valid command\n", args[0]);
     }
     else
     {

@@ -15,6 +15,13 @@
 #include <sys/wait.h>
 #include <sys/resource.h>
 #include <stdbool.h>
+#include <signal.h>
+#include <errno.h>
+#include <termios.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <ctype.h>
 
 #include "prompt.h"
 #include "warp.h"
@@ -23,5 +30,13 @@
 #include "pastevents.h"
 #include "seek.h"
 #include "background.h"
+#include "activities.h"
+#include "ping.h"
+#include "networking.h"
+#include "terminal_setting.h"
+#include "neonate.h"
+#include "fgbg.h"
+#include "redirection.h"
+#include "helpers.h"
 
 #endif

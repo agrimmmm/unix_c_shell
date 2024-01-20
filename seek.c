@@ -1,6 +1,6 @@
 #include "headers.h"
 
-void set_seek(char* input, char* UserName)
+void set_seek(char* input, char* UserName, char* prevwd)
 {
     char tilda[1024];
     sprintf(tilda, "/home/%s", UserName);
@@ -38,12 +38,12 @@ void set_seek(char* input, char* UserName)
                         {
                             strcpy(dir, tilda);
                         }
-                        number = seek(name, dir, 'd', e, dir);
+                        number = seek(name, dir, 'd', e, dir, prevwd);
                     }
                     else
                     {
                         name[strlen(name)-1] = '\0';
-                        number = seek(name, home, 'd', e, home);
+                        number = seek(name, home, 'd', e, home, prevwd);
                     }
                 }
             }
@@ -57,12 +57,12 @@ void set_seek(char* input, char* UserName)
                     {
                         strcpy(dir, tilda);
                     }
-                    number = seek(token, dir, 'd', e, dir);
+                    number = seek(token, dir, 'd', e, dir, prevwd);
                 }
                 else
                 {
                     token[strlen(token)-1] = '\0';
-                    number = seek(token, home, 'd', e, home);
+                    number = seek(token, home, 'd', e, home, prevwd);
                 }
             }
         }
@@ -93,12 +93,12 @@ void set_seek(char* input, char* UserName)
                         {
                             strcpy(dir, tilda);
                         }
-                        number = seek(name, dir, 'd', e, dir);
+                        number = seek(name, dir, 'd', e, dir, prevwd);
                     }
                     else
                     {
                         name[strlen(name)-1] = '\0';
-                        number = seek(name, home, 'f', e, home);
+                        number = seek(name, home, 'f', e, home, prevwd);
                     }
                 }
             }
@@ -112,12 +112,12 @@ void set_seek(char* input, char* UserName)
                         {
                             strcpy(dir, tilda);
                         }
-                        number = seek(token, dir, 'd', e, dir);
+                        number = seek(token, dir, 'd', e, dir, prevwd);
                     }
                 else
                 {
                     token[strlen(token)-1] = '\0';
-                    number = seek(token, home, 'f', e, home);
+                    number = seek(token, home, 'f', e, home, prevwd);
                 }
             }
         }
@@ -143,12 +143,12 @@ void set_seek(char* input, char* UserName)
                         {
                             strcpy(dir, tilda);
                         }
-                        number = seek(name, dir, 'd', e, dir);
+                        number = seek(name, dir, 'd', e, dir, prevwd);
                     }
                     else
                     {
                         name[strlen(name)-1] = '\0';
-                        number = seek(name, home, 'f', e, home);
+                        number = seek(name, home, 'f', e, home, prevwd);
                     }
                 }
             }
@@ -170,12 +170,12 @@ void set_seek(char* input, char* UserName)
                         {
                             strcpy(dir, tilda);
                         }
-                        number = seek(name, dir, 'd', e, dir);
+                        number = seek(name, dir, 'd', e, dir, prevwd);
                     }
                     else
                     {
                         name[strlen(name)-1] = '\0';
-                        number = seek(name, home, 'd', e, home);
+                        number = seek(name, home, 'd', e, home, prevwd);
                     }
                 }
             }
@@ -189,12 +189,12 @@ void set_seek(char* input, char* UserName)
                     {
                         strcpy(dir, tilda);
                     }
-                    number = seek(token, dir, 'x', e, dir);
+                    number = seek(token, dir, 'x', e, dir, prevwd);
                 }
                 else
                 {
                     token[strlen(token)-1] = '\0';
-                    number = seek(token, home, 'x', e, home);
+                    number = seek(token, home, 'x', e, home, prevwd);
                 }
             }
         }
@@ -209,12 +209,12 @@ void set_seek(char* input, char* UserName)
                 {
                     strcpy(dir, tilda);
                 }
-                number = seek(name, dir, 'x', e, dir);
+                number = seek(name, dir, 'x', e, dir, prevwd);
             }
             else
             {
                 name[strlen(name)-1] = '\0';
-                number = seek(name, home, 'x', e, home);
+                number = seek(name, home, 'x', e, home, prevwd);
             }
         }
     }
@@ -224,7 +224,7 @@ void set_seek(char* input, char* UserName)
         printf("No match found!\n");
 }
 
-int seek(char* word, char* dir, char df, int e, char* current)
+int seek(char* word, char* dir, char df, int e, char* current, char* prevwd)
 {
     char e_name[1024];
     char e_type;
@@ -244,7 +244,7 @@ int seek(char* word, char* dir, char df, int e, char* current)
         stat(path, &buff);
 
         if(S_ISDIR(buff.st_mode))
-            i += seek(word, path, df, e, current);
+            i += seek(word, path, df, e, current, prevwd);
 
         int len = strlen(word);
         int check = 0;
@@ -289,9 +289,14 @@ int seek(char* word, char* dir, char df, int e, char* current)
     {
         if(e_type == 'd')
         {
-            char path[4096];
-            sprintf(path, "warp %s", e_name);
-            warp(path, UserName, dir);
+            // char path[4096];
+            // sprintf(path, "warp %s", e_name);
+            // printf("%s\n", path);
+            //warp(path, UserName, dir);
+            char buff[4096];
+            getcwd(buff, sizeof(buff));
+            strcpy(prevwd, buff);
+            chdir(e_name);
         }
         else if(e_type == 'f')
         {

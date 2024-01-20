@@ -12,7 +12,7 @@ void prompt(char* UserName)
     sprintf(check, "/home/%s", UserName);
 
     if(strcmp(Directory, check) != 0)
-        printf("<%s@%s:%s> ", UserName, SystemName, Directory);
+        printf("\033[1;36m<%s@%s\033[0m:\033[1;31m%s>\033[0m ", UserName, SystemName, Directory);
     else
-        printf("<%s@%s:~> ", UserName, SystemName);
+        printf("\033[1;36m<%s@%s\033[0m:\033[1;31m~>\033[0m ", UserName, SystemName);
 }

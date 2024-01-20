@@ -16,6 +16,8 @@ typedef struct store
     int color;
 }store;
 
+void ls(char* str, char* UserName);
+
 void peek(char* dir, int op_a, int op_l);
 
 #endif

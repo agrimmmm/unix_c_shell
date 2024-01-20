@@ -1,6 +1,8 @@
 #include "headers.h"
 
 char current[2048];
+pid_t fg_pid = 0;
+int d_flag = 0;
 
 typedef struct children
 {
@@ -11,107 +13,9 @@ typedef struct children
 
 children processes;
 
-bool isSubstring(char *input, char *substring)
-{
-    int inputLength = strlen(input);
-    int substringLength = strlen(substring);
-
-    if(inputLength < substringLength)
-        return false;
-
-    for (int i = 0; i <= inputLength - substringLength; i++)
-    {
-        int j;
-        for (j = 0; j < substringLength; j++)
-        {
-            if (input[i + j] != substring[j])
-                break;
-        }
-        if (j == substringLength)
-            return true;
-    }
-    return false;
-}
-
-void ls(char* str, char* UserName)
-{
-    if(str[0] == 'p' && str[1] == 'e' && str[2] == 'e' && str[3] == 'k')
-    {
-        char Directory[1024];
-        getcwd(Directory, sizeof(Directory));
-        if(str[4] == '\n' || (str[4] == ' ' && str[5] == '\n'))
-        {
-            peek(Directory, 0, 0);
-            return;
-        }
-        char* token;
-        token = strtok(str, " ");
-        int op_a = 0, op_l = 0;
-        while(token)
-        {
-            token = strtok(NULL, " ");
-            if(token == NULL)
-                return;
-            if(strcmp(token, "-a\n") == 0)
-                peek(Directory, 1, 0);
-            else if(strcmp(token, "-l\n") == 0)
-                peek(Directory, 0, 1);
-            else if(strcmp(token, "-al\n") == 0 || strcmp(token, "-la\n") == 0)
-                peek(Directory, 1, 1);
-            else if(strcmp(token, "-a") == 0)
-                op_a = 1;
-            else if(strcmp(token, "-l") == 0)
-                op_l = 1;
-            else if(strcmp(token, "-al") == 0 || strcmp(token, "-la") == 0)
-            {
-                op_a = 1;
-                op_l = 1;
-            }
-            else if(!token)
-            {
-                peek(Directory, op_a, op_l);
-                exit;
-            }
-            else
-            {
-                token[strlen(token)-1] = '\0';
-                if(strcmp(token, "~") == 0)
-                {
-                    char home[256];
-                    sprintf(home, "/home/%s", UserName);
-                    peek(home, op_a, op_l);
-                }
-                else
-                    peek(token, op_a, op_l);
-            }
-        }
-    }
-    else    
-        exit;
-}
-
-void retrieve(char* input)
-{
-    if(strcmp(input, "proclore\n") == 0 || strcmp(input, "proclore ") == 0)
-        proclore(0);
-    else
-    {
-        char* token;
-        token = strtok(input, " ");
-        if(strcmp(token, "proclore") == 0)
-        {
-            token = strtok(NULL, " ");
-            int pid = atoi(token);
-            proclore(pid);
-        }
-        else
-            exit;
-    }
-}
-
 void hist_fns(char* str, int* flag, int* count)
 {
-    if(strcmp(str, "pastevents\n") == 0 || strcmp(str, "pastevents ") == 0)
+    if(strcmp(str, "pastevents") == 0 || strcmp(str, "pastevents ") == 0)
     {
         char* path = (char*)calloc(sizeof(char), 2048);
         sprintf(path, "%s/%s", current, "command_store.txt");
@@ -126,7 +30,7 @@ void hist_fns(char* str, int* flag, int* count)
         token = strtok(NULL, " ");
         if(token)
         {
-            if(strcmp(token, "purge\n") == 0)
+            if(strcmp(token, "purge") == 0)
                 past_purge(flag);
             else if(strcmp(token, "execute") == 0)
             {
@@ -143,11 +47,19 @@ void hist_fns(char* str, int* flag, int* count)
 
 void process(char* input, char* UserName, char* prevwd, int* flag, int* count)
 {
+    removeExtraSpaces(input);
+
     char* cd = "warp";
     char* list = "peek";
     char* match = "seek";
     char* printhis = "pastevents";
     char* info = "proclore";
+    char* allinfo = "activities";
+    char* signals = "ping";
+    char* inf_proc = "neonate";
+    char* manpages = "iMan";
+    char* f = "fg";
+    char* b = "bg";
 
     if(isSubstring(input, "&"))
     {
@@ -166,11 +78,44 @@ void process(char* input, char* UserName, char* prevwd, int* flag, int* count)
     else if(strncmp(input, list, strlen(list)) == 0)
         ls(input, UserName);
     else if(strncmp(input, match, strlen(match)) == 0)
-        set_seek(input, UserName);
+        set_seek(input, UserName, prevwd);
     else if(strncmp(input, printhis, strlen(printhis)) == 0)
         hist_fns(input, flag, count);
     else if(strncmp(input, info, strlen(info)) == 0)
         retrieve(input);
+    else if(strncmp(input, allinfo, strlen(allinfo)) == 0)
+        activities();
+    else if(strncmp(input, signals, strlen(signals)) == 0)
+        ping(input);
+    else if(strncmp(input, inf_proc, strlen(inf_proc)) == 0)
+        neonate(input);
+    else if(strncmp(input, f, strlen(f)) == 0)
+    {
+        char* token = strtok(input, " ");
+        token = strtok(NULL, " ");
+        if(token == NULL)
+            printf("ERROR: Enter man-page to be found\n");
+        else
+            fg(atoi(token));
+    }
+    else if(strncmp(input, b, strlen(b)) == 0)
+    {
+        char* token = strtok(input, " ");
+        token = strtok(NULL, " ");
+        if(token == NULL)
+            printf("ERROR: Enter man-page to be found\n");
+        else
+            bg(atoi(token));
+    }
+    else if(strncmp(input, manpages, strlen(manpages)) == 0)
+    {
+        char* token = strtok(input, " ");
+        token = strtok(NULL, " ");
+        if(token == NULL)
+            printf("ERROR: Enter man-page to be found\n");
+        else
+            iman(token);
+    }
     else
     {
         if(input[strlen(input)-1] == '\n')
@@ -194,21 +139,29 @@ void process(char* input, char* UserName, char* prevwd, int* flag, int* count)
         pid_t sys = fork();
         if(sys == 0)
         {
-        int e_check = execvp(args[0], final_args);
-        if(e_check == -1)
-            printf("ERROR : %s is not a valid command\n", args[0]);
+            int e_check = execvp(args[0], final_args);
+            if(e_check == -1)
+            {
+                printf("ERROR : %s is not a valid command\n", args[0]);
+                exit(1);
+            }
         }
         else
         {
+            fg_pid = sys;
             int status;
             waitpid(sys, &status, 0);
         }
     }
 }
 
-
 void and_delimiter(char* input, char* UserName, char* prevwd, int* flag, int* count)
 {
+    removeExtraSpaces(input);
+
+    int flg = 0;
+    if(input[strlen(input)-1] == '&')
+        flg = 1;
     char* token = strtok(input, "&");
     char* all_commands[128];
     int i=0;
@@ -222,7 +175,7 @@ void and_delimiter(char* input, char* UserName, char* prevwd, int* flag, int* co
         int len = strlen(all_commands[j]);
         char* command = (char*)calloc(sizeof(char), len+3);
         strcpy(command, all_commands[j]);
-        if(j != i-1)
+        if(j != i-1 || flg == 1)
             command[strlen(command)] = '&';
         process(command, UserName, prevwd, flag, count);
     }
@@ -230,6 +183,8 @@ void and_delimiter(char* input, char* UserName, char* prevwd, int* flag, int* co
 
 void semi_delimiter(char* input, char* UserName, char* prevwd, int* flag, int* count)
 {
+    removeExtraSpaces(input);
+    
     char* token = strtok(input, ";");
     char* all_commands[128];
     int i=0;
@@ -248,8 +203,33 @@ void semi_delimiter(char* input, char* UserName, char* prevwd, int* flag, int* c
     }
 }
 
+void ctrl_c(int sin)
+{
+    if(fg_pid != 0)
+    {
+        kill(fg_pid, SIGINT);
+        printf("\n\033[1;32mSTOPPED!!\033[0m\n");
+    }
+}
+
+void ctrl_z(int sin)
+{
+    if(fg_pid != 0)
+    {
+        kill(fg_pid, SIGTSTP);
+        printf("\n\033[1;32mPushed to Background\033[0m\n");
+    }
+}
+
+void ctrl_d()
+{
+    kill(0, SIGTERM);
+    exit(0);
+}
+
 int main()
 {
+    fg_pid = 0;
     getcwd(current, sizeof(current));
     processes.no_of_children = 0;
     for(int i=0;i<128;i++)
@@ -257,12 +237,13 @@ int main()
         processes.names[i] = (char*)calloc(sizeof(char), 128);
     }
     char* UserName = getlogin();
-    // Keep accepting commands
     char* prevwd = (char*)calloc(sizeof(char), 4096);
     char* prevComm = (char*)calloc(sizeof(char), 4096);
     int flag = 0, count = 0;
 
-    FILE* fptr = fopen("command_store.txt", "r");
+    char* dirforstore = (char*)calloc(sizeof(char), 2048);
+    sprintf(dirforstore, "%s/command_store.txt", current);
+    FILE* fptr = fopen(dirforstore, "r");
     char c = fgetc(fptr);
     while(c != EOF)
     {
@@ -272,12 +253,31 @@ int main()
     }
     fclose(fptr);
 
+    struct sigaction act;
+    act.sa_handler = &ctrl_c;
+    sigfillset(&act.sa_mask);
+    act.sa_flags = SA_RESTART;
+    sigaction(SIGINT, &act, NULL);
+
+    struct sigaction azt;
+    azt.sa_handler = &ctrl_z;
+    sigfillset(&azt.sa_mask);
+    sigaction(SIGTSTP, &azt, NULL);
+
     while (1)
     {
-        // Print appropriate prompt with username, systemname and directory before accepting input
+        if(d_flag == 1)
+            exit(0);
         prompt(UserName);
-        char input[4096];
-        fgets(input, 4096, stdin);
+        char* input = (char*)calloc(sizeof(char), 4096);
+        strcpy(input, TakeInput());
+        // printf("%s\n", input);
+        if(input == NULL)
+            ctrl_d();
+        if(d_flag == 1)
+            exit(0);
+        char tokenizer[4096];
+        strcpy(tokenizer, input);
         for(int k=0; k<processes.no_of_children; k++)
         {
             int status;
@@ -290,24 +290,24 @@ int main()
                     printf("%s exited abnormally (%d)\n", processes.names[k], processes.pids[k]);
             }
         }
-
         if(isSubstring(input, "pastevents") == false)
         {
             if(input != " " && strcmp(input, prevComm) != 0)
             {
-                FILE* fptr = fopen("command_store.txt", "a");
-                fprintf(fptr, "%s", input);
+                FILE* fptr = fopen(dirforstore, "a");
+                fprintf(fptr, "%s\n", input);
                 if(count < 16)
                     count++;
                 strcpy(prevComm, input);
                 if (count == 16)
                     flag = 1;
                 fclose(fptr);
-        
                 if(flag == 1)
                 {
-                    FILE* org = fopen("command_store.txt", "r");
-                    FILE* copy = fopen("temp.txt", "w");
+                    char* tempdir = (char*)calloc(sizeof(char), 2048);
+                    sprintf(tempdir, "%s/temp.txt", current);
+                    FILE* org = fopen(dirforstore, "r");
+                    FILE* copy = fopen(tempdir, "w");
                     char garbage = fgetc(org);
                     while(garbage != '\n')
                     {
@@ -320,17 +320,273 @@ int main()
                     }
                     fclose(org);
                     fclose(copy);
-                    rmdir("command_store.txt");
-                    rename("temp.txt", "command_store.txt");
+                    rmdir(dirforstore);
+                    rename(tempdir, dirforstore);
                 }
             }
         }
 
-        if(isSubstring(input, ";"))
-            semi_delimiter(input, UserName, prevwd, &flag, &count);
-        else if(isSubstring(input, "&"))
-            and_delimiter(input, UserName, prevwd, &flag, &count);
+        int in_flag = 0, out_flag = 0;
+        int in, out, readinp;
+        char* strings[8];
+        int cnt = 0;
+        char* token = strtok(input, "|");
+        while(token)
+        {
+            strings[cnt] = token;
+            cnt++;
+            token = strtok(NULL, "|");
+        }
+
+        if(cnt > 1)
+        {
+            in = dup(STDIN_FILENO);
+            out = dup(STDOUT_FILENO);
+            readinp = dup(STDIN_FILENO);
+
+            int fild[2];
+            for(int i=0; i<cnt; i++)
+            {
+                pipe(fild);
+                if(i != 0)
+                    dup2(readinp, STDIN_FILENO);
+                if(i == cnt-1)
+                    dup2(out, STDOUT_FILENO);
+                else
+                {
+                    dup2(fild[1], STDOUT_FILENO);
+                    close(fild[1]);
+                }
+                if(isSubstring(strings[i], "<"))
+                {
+                    char* newinp;
+                    char* subtok = strtok(strings[i], "<");
+                    newinp = subtok;
+                    subtok = strtok(NULL, "<");
+                    if(!isSubstring(subtok, ">>") && !isSubstring(subtok, ">"))
+                    {
+                        if(subtok == NULL)
+                        {
+                            printf("Syntax Error!\n");
+                            continue;
+                        }
+                        in_flag = 1;
+                        removeExtraSpaces(subtok);
+                        redirectInput(subtok);
+                    }
+                    else if(isSubstring(subtok, ">>"))
+                    {
+                        char* ansubtok = strtok(subtok, ">>");
+                        if(ansubtok == NULL)
+                        {
+                            printf("Syntax Error!\n");
+                            continue;
+                        }
+                        in_flag = 1;
+                        removeExtraSpaces(ansubtok);
+                        redirectInput(ansubtok);
+                        ansubtok = strtok(NULL, ">>");
+                        if(ansubtok == NULL)
+                        {
+                            printf("Syntax Error!\n");
+                            continue;
+                        }
+                        out_flag = 2;
+                        removeExtraSpaces(ansubtok);
+                        redirectOutput(ansubtok, out_flag);
+                    }
+                    else if(isSubstring(subtok, ">"))
+                    {
+                        char* ansubtok = strtok(subtok, ">");
+                        if(ansubtok == NULL)
+                        {
+                            printf("Syntax Error!\n");
+                            continue;
+                        }
+                        in_flag = 1;
+                        removeExtraSpaces(ansubtok);
+                        redirectInput(ansubtok);
+                        ansubtok = strtok(NULL, ">");
+                        if(ansubtok == NULL)
+                        {
+                            printf("Syntax Error!\n");
+                            continue;
+                        }
+                        out_flag = 1;
+                        removeExtraSpaces(ansubtok);
+                        redirectOutput(ansubtok, out_flag);
+                    }
+                    strcpy(strings[i], newinp);
+                }
+                else
+                {
+                    if(isSubstring(strings[i], ">>"))
+                    {
+                        char* newinp;
+                        char* ansubtok = strtok(strings[i], ">>");
+                        newinp = ansubtok;
+                        ansubtok = strtok(NULL, ">>");
+                        if(ansubtok == NULL)
+                        {
+                            printf("Syntax Error!\n");
+                            continue;
+                        }
+                        out_flag = 2;
+                        removeExtraSpaces(ansubtok);
+                        redirectOutput(ansubtok, out_flag);
+                        strcpy(strings[i], newinp);
+                    }
+                    else if(isSubstring(strings[i], ">"))
+                    {
+                        char* newinp;
+                        char* ansubtok = strtok(strings[i], ">");
+                        newinp = ansubtok;
+                        ansubtok = strtok(NULL, ">");
+                        if(ansubtok == NULL)
+                        {
+                            printf("Syntax Error!\n");
+                            continue;
+                        }
+                        out_flag = 1;
+                        removeExtraSpaces(ansubtok);
+                        redirectOutput(ansubtok, out_flag);
+                        strcpy(strings[i], newinp);
+                    }
+                }
+
+                if(isSubstring(strings[i], ";"))
+                    semi_delimiter(strings[i], UserName, prevwd, &flag, &count);
+                else if(isSubstring(strings[i], "&"))
+                    and_delimiter(strings[i], UserName, prevwd, &flag, &count);
+                else
+                    process(strings[i], UserName, prevwd, &flag, &count);
+                    
+                if(in_flag == 1)    
+                    dup2(in, STDIN_FILENO);
+                if(out_flag > 0)
+                    dup2(out, STDOUT_FILENO);
+
+                readinp = fild[0];
+            }
+            dup2(in, STDIN_FILENO);
+            close(in);
+            close(out);
+            close(readinp);
+        }
         else
-            process(input, UserName, prevwd, &flag, &count);
+        {
+            in = dup(STDIN_FILENO);
+            out = dup(STDOUT_FILENO);
+            if(isSubstring(input, "<"))
+            {
+                char* newinp;
+                char* subtok = strtok(tokenizer, "<");
+                newinp = subtok;
+                subtok = strtok(NULL, "<");
+                if(!isSubstring(subtok, ">>") && !isSubstring(subtok, ">"))
+                {
+                    if(subtok == NULL)
+                    {
+                        printf("Syntax Error!\n");
+                        continue;
+                    }
+                    in_flag = 1;
+                    removeExtraSpaces(subtok);
+                    redirectInput(subtok);
+                }
+                else if(isSubstring(subtok, ">>"))
+                {
+                    char* ansubtok = strtok(subtok, ">>");
+                    if(ansubtok == NULL)
+                    {
+                        printf("Syntax Error!\n");
+                        continue;
+                    }
+                    in_flag = 1;
+                    removeExtraSpaces(ansubtok);
+                    redirectInput(ansubtok);
+                    ansubtok = strtok(NULL, ">>");
+                    if(ansubtok == NULL)
+                    {
+                        printf("Syntax Error!\n");
+                        continue;
+                    }
+                    out_flag = 2;
+                    removeExtraSpaces(ansubtok);
+                    redirectOutput(ansubtok, out_flag);
+                }
+                else if(isSubstring(subtok, ">"))
+                {
+                    char* ansubtok = strtok(subtok, ">");
+                    if(ansubtok == NULL)
+                    {
+                        printf("Syntax Error!\n");
+                        continue;
+                    }
+                    in_flag = 1;
+                    removeExtraSpaces(ansubtok);
+                    redirectInput(ansubtok);
+                    ansubtok = strtok(NULL, ">");
+                    if(ansubtok == NULL)
+                    {
+                        printf("Syntax Error!\n");
+                        continue;
+                    }
+                    out_flag = 1;
+                    removeExtraSpaces(ansubtok);
+                    redirectOutput(ansubtok, out_flag);
+                }
+                memset(input, '\0', sizeof(input));
+                strcpy(input, newinp);
+            }
+            else
+            {
+                if(isSubstring(input, ">>"))
+                {
+                    char* newinp;
+                    char* ansubtok = strtok(tokenizer, ">>");
+                    newinp = ansubtok;
+                    ansubtok = strtok(NULL, ">>");
+                    if(ansubtok == NULL)
+                    {
+                        printf("Syntax Error!\n");
+                        continue;
+                    }
+                    out_flag = 2;
+                    removeExtraSpaces(ansubtok);
+                    redirectOutput(ansubtok, out_flag);
+                    memset(input, '\0', sizeof(input));
+                    strcpy(input, newinp);
+                }
+                else if(isSubstring(input, ">"))
+                {
+                    char* newinp;
+                    char* ansubtok = strtok(tokenizer, ">");
+                    newinp = ansubtok;
+                    ansubtok = strtok(NULL, ">");
+                    if(ansubtok == NULL)
+                    {
+                        printf("Syntax Error!\n");
+                        continue;
+                    }
+                    out_flag = 1;
+                    removeExtraSpaces(ansubtok);
+                    redirectOutput(ansubtok, out_flag);
+                    memset(input, '\0', sizeof(input));
+                    strcpy(input, newinp);
+                }
+            }
+
+            if(isSubstring(input, ";"))
+                semi_delimiter(input, UserName, prevwd, &flag, &count);
+            else if(isSubstring(input, "&"))
+                and_delimiter(input, UserName, prevwd, &flag, &count);
+            else
+                process(input, UserName, prevwd, &flag, &count);
+            if(in_flag == 1)    
+                dup2(in, STDIN_FILENO);
+            if(out_flag > 0)
+                dup2(out, STDOUT_FILENO);
+        }
     }
 }

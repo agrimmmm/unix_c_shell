@@ -1,0 +1,15 @@
+sleep 100
+activities
+bg 44009
+activities
+neonate -n 0
+neonate -n 2
+proclore
+neonate -n 2
+neonate -n 2.5
+warp ..
+warp -
+echo
+iMan man
+iMan ls
+iMan asfg

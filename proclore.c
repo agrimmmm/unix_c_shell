@@ -1,5 +1,24 @@
 #include "headers.h"
 
+void retrieve(char* input)
+{
+    if(strcmp(input, "proclore") == 0 || strcmp(input, "proclore ") == 0)
+        proclore(0);
+    else
+    {
+        char* token;
+        token = strtok(input, " ");
+        if(strcmp(token, "proclore") == 0)
+        {
+            token = strtok(NULL, " ");
+            int pid = atoi(token);
+            proclore(pid);
+        }
+        else
+            exit;
+    }
+}
+
 void proclore(int pid)
 {
     if(pid == 0)

@@ -2,14 +2,14 @@
 
 char* warp(char* str, char* UserName, char* prevwd)
 {
-    if(strcmp(str, "warp\n") == 0)
+    if(strcmp(str, "warp") == 0)
     {
         chdir("/home");
         printf("/home\n");
         exit;
     }
 
-    if(strcmp(str, "warp \n") == 0)
+    if(strcmp(str, "warp ") == 0)
     {
         chdir("/home");
         exit;
@@ -42,6 +42,7 @@ char* warp(char* str, char* UserName, char* prevwd)
             }
             else
                 chdir(token);
+            memset(prevwd, '\0', sizeof(prevwd));
             strcpy(prevwd, currwd);
             
             token = strtok(NULL, " ");
